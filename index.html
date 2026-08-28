@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0b12" />
     <title>BUERLYPH — Wound Sensor Console</title>
-    <link rel="stylesheet" href="styles.css?v=9" />
+    <link rel="stylesheet" href="styles.css?v=10" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -126,20 +126,37 @@
             </div>
           </section>
 
-          <section class="data-window humidity-window panel">
-            <div class="window-bar">
-              <span>HUMID_SENSOR.EXE</span>
-              <div class="window-controls"><i></i><i></i></div>
-            </div>
-            <div class="window-body metric-body">
-              <div class="metric-icon drop-icon" aria-hidden="true"></div>
-              <p class="metric-label">LOCAL HUMIDITY</p>
-              <div class="metric-value"><strong id="humidityValue">61</strong><span>%</span></div>
-              <div class="range-row"><span>TARGET RANGE</span><b>55—65%</b></div>
-              <div class="mini-track"><span id="humidityTrack"></span></div>
-              <div class="metric-foot positive"><span>✓</span> OPTIMAL MOISTURE</div>
-            </div>
-          </section>
+          <div class="side-stack">
+            <section class="data-window moisture-window panel">
+              <div class="window-bar">
+                <span>MOISTURE_SENSOR.EXE</span>
+                <div class="window-controls"><i></i><i></i></div>
+              </div>
+              <div class="window-body metric-body">
+                <div class="metric-icon drop-icon" aria-hidden="true"></div>
+                <p class="metric-label">LOCAL MOISTURE</p>
+                <div class="metric-value"><strong id="moistureValue">61</strong><span>%</span></div>
+                <div class="range-row"><span>TARGET RANGE</span><b>55—65%</b></div>
+                <div class="mini-track"><span id="moistureTrack"></span></div>
+                <div class="metric-foot positive"><span>✓</span> OPTIMAL MOISTURE</div>
+              </div>
+            </section>
+
+            <section class="data-window spo2-window panel">
+              <div class="window-bar">
+                <span>SPO2_SENSOR.EXE</span>
+                <div class="window-controls"><i></i><i></i></div>
+              </div>
+              <div class="window-body metric-body">
+                <div class="metric-icon spo2-icon" aria-hidden="true"></div>
+                <p class="metric-label">BLOOD OXYGEN</p>
+                <div class="metric-value"><strong id="spo2Value">98</strong><span>%</span></div>
+                <div class="range-row"><span>NORMAL RANGE</span><b>95—100%</b></div>
+                <div class="mini-track"><span id="spo2Track"></span></div>
+                <div class="metric-foot positive"><span>✓</span> STABLE SATURATION</div>
+              </div>
+            </section>
+          </div>
 
           <section class="healing-window panel">
             <div class="healing-topline">
@@ -151,11 +168,11 @@
             </div>
             <div class="pixel-progress" aria-label="Healing progress: 68 percent">
               <div class="progress-fill" id="healingTrack"></div>
-              <div class="expected-marker"><span>EXPECTED 65%</span></div>
+              <div class="expected-marker"><span id="healingExpectedLabel">EXPECTED 65%</span></div>
             </div>
             <div class="healing-details">
               <span>INITIAL</span>
-              <span class="ahead">+3% AHEAD OF CURVE</span>
+              <span class="ahead" id="healingVarianceLabel">+3% AHEAD OF CURVE</span>
               <span>RECOVERED</span>
             </div>
           </section>
@@ -198,7 +215,8 @@
               <div class="metric-tabs">
                 <button class="active" data-metric="healing">HEALING</button>
                 <button data-metric="temperature">TEMPERATURE</button>
-                <button data-metric="humidity">HUMIDITY</button>
+                <button data-metric="moisture">MOISTURE</button>
+                <button data-metric="spo2">SPO2</button>
               </div>
             </div>
             <div class="chart-legend">
@@ -244,6 +262,6 @@
       </footer>
     </main>
 
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=9"></script>
   </body>
 </html>
