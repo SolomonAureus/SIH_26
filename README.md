@@ -2,7 +2,7 @@
 
 A local-first, retro pixel dashboard for ESP32 wound-monitoring data. It includes:
 
-- Live temperature, moisture, and SpO2 readouts
+- Live temperature and humidity readouts
 - Central multi-source visual scanner with camera discovery and an animated demo view
 - Visible, ultraviolet, infrared, and thermal-map display modes
 - Healing progress status against the expected curve
@@ -40,8 +40,7 @@ The dashboard expects WebSocket messages shaped like:
 ```json
 {
   "temperature": 36.7,
-  "moisture": 61,
-  "spo2": 98,
+  "humidity": 61,
   "healing": 68
 }
 ```

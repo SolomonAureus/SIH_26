@@ -15,18 +15,13 @@ const CONFIG = {
 
 const state = {
   temperature: 36.7,
-  moisture: 61,
-  spo2: 98,
+  humidity: 61,
   healing: 68,
   packets: 1842,
   currentMetric: 'healing',
   currentRange: 24,
   cameraStream: null,
 };
-
-// Reference healing curve target for the current session day (Day 8).
-// Keep this in sync with chartData.healing.expected if that curve changes.
-const EXPECTED_HEALING = 65;
 
 const $ = (selector) => document.querySelector(selector);
 const $$ = (selector) => [...document.querySelectorAll(selector)];
@@ -42,34 +37,21 @@ function updateClock() {
 
 function renderSensorData(data) {
   if (Number.isFinite(data.temperature)) state.temperature = data.temperature;
-  if (Number.isFinite(data.moisture)) state.moisture = data.moisture;
-  if (Number.isFinite(data.spo2)) state.spo2 = data.spo2;
+  if (Number.isFinite(data.humidity)) state.humidity = data.humidity;
   if (Number.isFinite(data.healing)) state.healing = data.healing;
   state.packets += 1;
 
   $('#tempValue').textContent = state.temperature.toFixed(1);
-  $('#moistureValue').textContent = Math.round(state.moisture);
-  $('#spo2Value').textContent = Math.round(state.spo2);
+  $('#humidityValue').textContent = Math.round(state.humidity);
   $('#healingValue').textContent = Math.round(state.healing);
   $('#tempTrack').style.width = `${Math.min(100, Math.max(0, (state.temperature - 32) * 14))}%`;
-  $('#moistureTrack').style.width = `${state.moisture}%`;
-  $('#spo2Track').style.width = `${Math.min(100, Math.max(0, ((state.spo2 - 90) / 10) * 100))}%`;
+  $('#humidityTrack').style.width = `${state.humidity}%`;
   $('#healingTrack').style.width = `${state.healing}%`;
   $('.pixel-progress').setAttribute('aria-label', `Healing progress: ${Math.round(state.healing)} percent`);
-  $('#healingExpectedLabel').textContent = `EXPECTED ${EXPECTED_HEALING}%`;
-  const healingVariance = Math.round(state.healing - EXPECTED_HEALING);
-  const varianceLabel = $('#healingVarianceLabel');
-  varianceLabel.textContent = healingVariance >= 0
-    ? `+${healingVariance}% AHEAD OF CURVE`
-    : `${healingVariance}% BEHIND CURVE`;
-  varianceLabel.classList.toggle('ahead', healingVariance >= 0);
-  varianceLabel.classList.toggle('behind', healingVariance < 0);
   $('#packetCount').textContent = String(state.packets).padStart(6, '0');
   $('#lastSync').textContent = 'NOW';
 
-  if (state.currentMetric !== 'healing' && document.getElementById('trends').classList.contains('active')) {
-    drawTrendChart();
-  }
+  if (state.currentMetric !== 'healing') drawTrendChart();
 }
 
 function startSensorConnection() {
@@ -77,8 +59,7 @@ function startSensorConnection() {
     setInterval(() => {
       renderSensorData({
         temperature: 36.7 + (Math.random() - 0.5) * 0.18,
-        moisture: 61 + (Math.random() - 0.5) * 1.3,
-        spo2: 98 + (Math.random() - 0.5) * 0.6,
+        humidity: 61 + (Math.random() - 0.5) * 1.3,
         healing: 68 + (Math.random() - 0.5) * 0.12,
       });
     }, 2200);
@@ -116,14 +97,6 @@ function setSpectrumMode(mode) {
   const stage = $('#cameraStage');
   stage.classList.remove('mode-visible', 'mode-infrared', 'mode-ultraviolet', 'mode-thermal');
   stage.classList.add(`mode-${mode}`);
-}
-
-function getAllCameraSources() {
-  const sources = [...CONFIG.cameraSources];
-  if (CONFIG.cameraStreamUrl && !sources.some((source) => source.url === CONFIG.cameraStreamUrl)) {
-    sources.unshift({ id: 'legacy-esp32', label: 'ESP32-CAM', type: 'mjpeg', url: CONFIG.cameraStreamUrl, spectrum: 'visible' });
-  }
-  return sources;
 }
 
 async function selectCameraSource(value) {
@@ -166,7 +139,7 @@ async function selectCameraSource(value) {
     return;
   }
 
-  const source = getAllCameraSources().find((item) => `network:${item.id}` === value);
+  const source = CONFIG.cameraSources.find((item) => `network:${item.id}` === value);
   if (!source) return;
   const image = $('#cameraFeed');
   image.onload = () => setCameraStatus('NETWORK FEED LIVE');
@@ -206,7 +179,10 @@ async function detectCameraSources(requestPermission = false) {
   const select = $('#cameraSourceSelect');
   select.querySelectorAll('optgroup').forEach((group) => group.remove());
 
-  const configuredSources = getAllCameraSources();
+  const configuredSources = [...CONFIG.cameraSources];
+  if (CONFIG.cameraStreamUrl && !configuredSources.some((source) => source.url === CONFIG.cameraStreamUrl)) {
+    configuredSources.unshift({ id: 'legacy-esp32', label: 'ESP32-CAM', type: 'mjpeg', url: CONFIG.cameraStreamUrl, spectrum: 'visible' });
+  }
   configuredSources.filter((source) => source.url).forEach((source) => {
     addCameraOption(`network:${source.id}`, `${source.label} / ${source.spectrum || 'visible'}`.toUpperCase(), 'NETWORK / SENSOR FEEDS');
   });
@@ -330,15 +306,10 @@ const chartData = {
     expected: [37.4, 37.3, 37.2, 37.1, 37.0, 36.9, 36.8, 36.8, 36.7, 36.7, 36.7, 36.7, 36.7, 36.7],
     actual: [37.8, 37.6, 37.3, 37.2, 37.0, 36.9, 36.9, 36.8, 36.7, 36.8, 36.7, 36.7, 36.7, 36.7],
   },
-  moisture: {
-    label: 'MOISTURE', unit: '%', min: 40, max: 80,
+  humidity: {
+    label: 'HUMIDITY', unit: '%', min: 40, max: 80,
     expected: [65, 64, 63, 62, 61, 60, 60, 60, 60, 59, 59, 59, 58, 58],
     actual: [71, 68, 66, 64, 63, 62, 60, 61, 61, 60, 60, 59, 59, 58],
-  },
-  spo2: {
-    label: 'SPO2', unit: '%', min: 90, max: 100,
-    expected: [96, 96, 97, 97, 97, 97, 98, 98, 98, 98, 98, 98, 98, 98],
-    actual: [95, 96, 96, 97, 97, 98, 97, 98, 98, 99, 98, 98, 99, 98],
   },
 };
 
