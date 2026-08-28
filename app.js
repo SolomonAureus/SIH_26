@@ -4,6 +4,12 @@ const CONFIG = {
   websocketUrl: '',
   // Set to an ESP32-CAM stream URL, e.g. http://192.168.1.80:81/stream.
   cameraStreamUrl: '',
+  // The Python RGB pipeline publishes these through the same local web server.
+  vitaStatusUrl: 'outputs/live_status.json',
+  vitaCameraUrl: 'outputs/live_camera.jpg',
+  vitaDetectionUrl: 'outputs/live_preview.jpg',
+  vitaPreviewMs: 100,
+  vitaPollMs: 750,
   // Add network cameras here. MJPEG streams render directly in the scanner.
   // UV/IR cameras connected by USB also appear automatically after SCAN.
   cameraSources: [
@@ -21,6 +27,8 @@ const state = {
   currentMetric: 'healing',
   currentRange: 24,
   cameraStream: null,
+  vitaPollTimer: null,
+  vitaPreviewTimer: null,
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -87,9 +95,17 @@ function stopBrowserCamera() {
   $('#cameraVideo').srcObject = null;
 }
 
+function stopVitaPolling() {
+  if (state.vitaPollTimer) clearTimeout(state.vitaPollTimer);
+  if (state.vitaPreviewTimer) clearTimeout(state.vitaPreviewTimer);
+  state.vitaPollTimer = null;
+  state.vitaPreviewTimer = null;
+}
+
 function showCameraElement(type) {
+  $('#cameraStage').classList.toggle('clean-camera', type !== 'demo');
   $('#cameraCanvas').hidden = type !== 'demo';
-  $('#cameraFeed').hidden = type !== 'mjpeg';
+  $('#cameraFeed').hidden = !['mjpeg', 'vita'].includes(type);
   $('#cameraVideo').hidden = type !== 'browser';
 }
 
@@ -101,13 +117,30 @@ function setSpectrumMode(mode) {
 
 async function selectCameraSource(value) {
   stopBrowserCamera();
-  $('#cameraFeed').removeAttribute('src');
+  stopVitaPolling();
+  const image = $('#cameraFeed');
+  image.onload = null;
+  image.onerror = null;
+  image.removeAttribute('src');
+  $('#vitaMetrics').hidden = true;
+  $('#vitaDetectionSnapshot').hidden = true;
 
   if (value === 'demo') {
     showCameraElement('demo');
     $('#activeCameraLabel').textContent = 'DEMO SCANNER';
     $('#activeCameraMeta').textContent = '640 × 480 / SYNTH';
     setCameraStatus('DEMO ACTIVE');
+    return;
+  }
+
+  if (value === 'vita') {
+    showCameraElement('demo');
+    $('#vitaMetrics').hidden = false;
+    $('#activeCameraLabel').textContent = 'VITA RGB / FUSEGNET';
+    $('#activeCameraMeta').textContent = 'PYTHON PIPELINE / WAITING';
+    setCameraStatus('CONNECTING TO INFERENCE');
+    pollVitaPreview();
+    pollVitaStatus();
     return;
   }
 
@@ -141,7 +174,6 @@ async function selectCameraSource(value) {
 
   const source = CONFIG.cameraSources.find((item) => `network:${item.id}` === value);
   if (!source) return;
-  const image = $('#cameraFeed');
   image.onload = () => setCameraStatus('NETWORK FEED LIVE');
   image.onerror = () => {
     showCameraElement('demo');
@@ -156,6 +188,76 @@ async function selectCameraSource(value) {
     setSpectrumMode(source.spectrum);
   }
   setCameraStatus('CONNECTING');
+}
+
+function metricText(value, digits = 0, suffix = '') {
+  return Number.isFinite(value) ? `${Number(value).toFixed(digits)}${suffix}` : '--';
+}
+
+async function pollVitaStatus() {
+  if ($('#cameraSourceSelect').value !== 'vita') return;
+  try {
+    const response = await fetch(`${CONFIG.vitaStatusUrl}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`status ${response.status}`);
+    const data = await response.json();
+    const status = data.complete ? 'ACQUISITION COMPLETE' : String(data.status || 'PROCESSING');
+    const statusNode = $('#vitaModelStatus');
+    statusNode.textContent = status;
+    statusNode.classList.toggle('good', data.status === 'GOOD' || data.complete);
+    statusNode.classList.toggle('warning', data.status !== 'GOOD' && !data.complete);
+    $('#vitaArea').textContent = metricText(data.wound_area_px, 0, ' PX');
+    $('#vitaConfidence').textContent = metricText(data.confidence, 2);
+    $('#vitaRedRatio').textContent = metricText(data.normalized_red_ratio, 3);
+    $('#vitaSamples').textContent = `${data.accepted_frames ?? 0}/${data.target_frames ?? 0}`;
+    $('#activeCameraMeta').textContent = `CPU / ${metricText(data.inference_fps, 2, ' FPS')}`;
+
+    const detection = $('#vitaDetectionImage');
+    detection.onload = () => {
+      if ($('#cameraSourceSelect').value === 'vita') $('#vitaDetectionSnapshot').hidden = false;
+    };
+    detection.src = `${CONFIG.vitaDetectionUrl}?t=${Date.now()}`;
+    setCameraStatus(data.complete ? 'RESULT READY' : 'INFERENCE LIVE');
+  } catch (error) {
+    $('#vitaModelStatus').textContent = 'PIPELINE OFFLINE';
+    $('#vitaModelStatus').className = 'warning';
+    $('#activeCameraMeta').textContent = 'RUN PYTHON ACQUISITION';
+    setCameraStatus('START VITA PIPELINE', true);
+  } finally {
+    if ($('#cameraSourceSelect').value === 'vita') {
+      state.vitaPollTimer = setTimeout(pollVitaStatus, CONFIG.vitaPollMs);
+    }
+  }
+}
+
+function pollVitaPreview() {
+  if ($('#cameraSourceSelect').value !== 'vita') return;
+  const image = $('#cameraFeed');
+  const scheduleNext = (delay = CONFIG.vitaPreviewMs) => {
+    if ($('#cameraSourceSelect').value === 'vita') {
+      state.vitaPreviewTimer = setTimeout(pollVitaPreview, delay);
+    }
+  };
+  image.onload = () => {
+    if ($('#cameraSourceSelect').value === 'vita') showCameraElement('vita');
+    scheduleNext();
+  };
+  image.onerror = () => scheduleNext(350);
+  image.src = `${CONFIG.vitaCameraUrl}?t=${Date.now()}`;
+}
+
+async function loadPixilThermometer() {
+  try {
+    const response = await fetch('Art/Thermometer.pixil');
+    if (!response.ok) throw new Error(`asset ${response.status}`);
+    const project = await response.json();
+    const frame = project.frames?.[0];
+    const source = frame?.preview || frame?.layers?.[0]?.src;
+    const comma = source?.indexOf(',') ?? -1;
+    if (comma < 0) throw new Error('No Pixilart frame found');
+    $('#thermometerArt').src = `data:image/png;base64,${source.slice(comma + 1)}`;
+  } catch (error) {
+    console.warn('Could not load thermometer Pixilart project', error);
+  }
 }
 
 function addCameraOption(value, label, group) {
@@ -469,6 +571,7 @@ setupNavigation();
 setupChartControls();
 setupChartInteraction();
 setupCameraFeed();
+loadPixilThermometer();
 drawCameraPlaceholder();
 startSensorConnection();
 showScreen(location.hash.slice(1) || 'overview');

@@ -1,0 +1,2 @@
+"""VITA prototype acquisition components."""
+

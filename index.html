@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0b12" />
     <title>BUERLYPH — Wound Sensor Console</title>
-    <link rel="stylesheet" href="styles.css?v=9" />
+    <link rel="stylesheet" href="styles.css?v=12" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -75,9 +75,7 @@
               <div class="window-controls"><i></i><i></i></div>
             </div>
             <div class="window-body metric-body">
-              <div class="metric-icon temp-icon" aria-hidden="true">
-                <span></span>
-              </div>
+              <img class="thermometer-art" id="thermometerArt" alt="Pixel thermometer" />
               <p class="metric-label">SKIN TEMP</p>
               <div class="metric-value"><strong id="tempValue">36.7</strong><span>°C</span></div>
               <div class="range-row"><span>NORMAL RANGE</span><b>36.1—37.2</b></div>
@@ -96,6 +94,7 @@
                 <span>INPUT SOURCE</span>
                 <select id="cameraSourceSelect" aria-label="Camera input source">
                   <option value="demo">DEMO SCANNER</option>
+                  <option value="vita">VITA RGB INFERENCE</option>
                 </select>
               </label>
               <button class="scan-button" id="scanCameras" type="button" title="Detect connected cameras">
@@ -112,10 +111,21 @@
               </label>
               <div class="source-state" id="cameraSourceState"><i></i> DEMO ACTIVE</div>
             </div>
+            <div class="vita-metrics" id="vitaMetrics" aria-live="polite" hidden>
+              <span>MODEL <b id="vitaModelStatus">WAITING</b></span>
+              <span>AREA <b id="vitaArea">--</b></span>
+              <span>CONF <b id="vitaConfidence">--</b></span>
+              <span>RED RATIO <b id="vitaRedRatio">--</b></span>
+              <span>SAMPLES <b id="vitaSamples">0/0</b></span>
+            </div>
             <div class="camera-stage mode-visible" id="cameraStage">
               <canvas id="cameraCanvas" width="760" height="500" aria-label="Live ESP32 camera visualization"></canvas>
               <img id="cameraFeed" alt="ESP32 camera feed" hidden />
               <video id="cameraVideo" autoplay muted playsinline hidden aria-label="Connected camera feed"></video>
+              <div class="detection-snapshot" id="vitaDetectionSnapshot" hidden>
+                <span>LAST MODEL FRAME</span>
+                <img id="vitaDetectionImage" alt="Latest wound segmentation result" />
+              </div>
               <div class="scan-line"></div>
               <div class="camera-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
               <div class="camera-overlay top-left"><b id="activeCameraLabel">DEMO SCANNER</b><br /><span id="activeCameraMeta">640 × 480 / SYNTH</span></div>
@@ -143,9 +153,12 @@
 
           <section class="healing-window panel">
             <div class="healing-topline">
-              <div>
-                <p class="eyebrow">WOUND HEALING STATUS</p>
-                <h3>ON TRACK <span>// DAY 08</span></h3>
+              <div class="healing-title-row">
+                <div class="heart-pulse" role="img" aria-label="Animated pixel heart"></div>
+                <div>
+                  <p class="eyebrow">WOUND HEALING STATUS</p>
+                  <h3>ON TRACK <span>// DAY 08</span></h3>
+                </div>
               </div>
               <div class="healing-percent"><strong id="healingValue">68</strong><span>%</span></div>
             </div>
@@ -244,6 +257,6 @@
       </footer>
     </main>
 
-    <script src="app.js?v=8"></script>
+    <script src="app.js?v=11"></script>
   </body>
 </html>

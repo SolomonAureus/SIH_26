@@ -190,9 +190,39 @@ body[data-screen="trends"] #trends { display: block; }
 }
 .source-state i { display: inline-block; width: 6px; height: 6px; margin-right: 5px; background: var(--blue); }
 .source-state.error i { background: var(--ink); animation: blink .8s steps(2) infinite; }
+.vita-metrics {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(4, 1fr);
+  gap: 1px;
+  border-bottom: var(--line);
+  color: var(--white);
+  background: var(--ink);
+  font: 400 6px/1.35 var(--pixel);
+}
+.vita-metrics[hidden] { display: none; }
+.vita-metrics span { padding: 7px 8px; border-right: 1px dotted rgba(255,255,247,.5); white-space: nowrap; }
+.vita-metrics span:last-child { border-right: 0; }
+.vita-metrics b { display: block; margin-top: 3px; overflow: hidden; color: var(--white); text-overflow: ellipsis; font: 700 9px/1 var(--mono); }
+.vita-metrics b.good { color: #75ff96; }
+.vita-metrics b.warning { color: #ffd866; }
 .camera-stage { position: relative; min-height: 0; flex: 1; overflow: hidden; background: var(--ink); }
 .camera-stage canvas, .camera-stage img, .camera-stage video { width: 100%; height: 100%; display: block; object-fit: cover; image-rendering: pixelated; }
+.camera-stage.clean-camera img, .camera-stage.clean-camera video { image-rendering: auto; }
 .camera-stage [hidden] { display: none !important; }
+.detection-snapshot {
+  position: absolute;
+  z-index: 4;
+  right: 16px;
+  bottom: 38px;
+  width: 142px;
+  padding: 5px;
+  border: 2px solid var(--white);
+  color: var(--white);
+  background: var(--ink);
+  box-shadow: 4px 4px 0 rgba(16,16,24,.7);
+  font: 400 5px/1.4 var(--pixel);
+}
+.camera-stage .detection-snapshot img { width: 100%; height: 92px; margin-top: 5px; object-fit: cover; }
 .camera-stage.mode-infrared canvas,
 .camera-stage.mode-infrared img,
 .camera-stage.mode-infrared video { filter: grayscale(1) contrast(1.45) brightness(.9) sepia(.25); }
@@ -222,6 +252,8 @@ body[data-screen="trends"] #trends { display: block; }
   pointer-events: none;
   background: repeating-linear-gradient(0deg, transparent 0 4px, rgba(16,16,24,.22) 4px 6px);
 }
+.camera-stage.clean-camera::after,
+.camera-stage.clean-camera .scan-line { display: none; }
 
 .camera-overlay {
   position: absolute;
@@ -255,6 +287,7 @@ body[data-screen="trends"] #trends { display: block; }
 .metric-body { padding: clamp(20px, 2.5vw, 38px) 20px 25px; text-align: center; }
 
 .metric-icon { position: relative; width: 42px; height: 52px; margin: 0 auto 23px; }
+.thermometer-art { display: block; width: 82px; height: 82px; margin: -12px auto 5px; object-fit: contain; image-rendering: pixelated; }
 .temp-icon { width: 18px; border: 3px solid var(--ink); border-radius: 12px 12px 0 0; }
 .temp-icon::after { content: ''; position: absolute; width: 26px; height: 26px; left: -7px; bottom: -13px; border: 3px solid var(--ink); border-radius: 50%; background: var(--white); }
 .temp-icon span { position: absolute; z-index: 1; width: 6px; height: 34px; left: 3px; bottom: 0; background: var(--blue); }
@@ -276,6 +309,15 @@ body[data-screen="trends"] #trends { display: block; }
 
 .healing-window { grid-column: 2; grid-row: 2; padding: 18px 20px 13px; }
 .healing-topline { display: flex; align-items: center; justify-content: space-between; }
+.healing-title-row { display: flex; align-items: center; gap: 15px; }
+.heart-pulse {
+  flex: 0 0 45px;
+  width: 45px;
+  height: 45px;
+  background: url('Art/heart-pulse.png') 0 0 / 270px 45px no-repeat;
+  image-rendering: pixelated;
+  animation: heartSprite .9s steps(6) infinite;
+}
 .healing-topline h3 { margin: 0; font: 400 15px/1.3 var(--pixel); color: var(--blue); }
 .healing-topline h3 span { color: var(--ink); font-size: 8px; }
 .healing-percent { display: flex; align-items: flex-start; }
@@ -366,6 +408,7 @@ body[data-screen="trends"] #trends { display: block; }
 @keyframes scan { from { top: 12%; } to { top: 90%; } }
 @keyframes screenIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes rotate { to { transform: rotate(360deg); } }
+@keyframes heartSprite { to { background-position-x: -270px; } }
 
 @media (max-width: 1050px) {
   .app-shell { width: calc(100% - 48px); padding-left: 42px; padding-right: 18px; }
@@ -391,6 +434,8 @@ body[data-screen="trends"] #trends { display: block; }
   .camera-toolbar { grid-template-columns: 1fr auto; }
   .mode-field { grid-column: 1; }
   .source-state { grid-column: 2; grid-row: 2; }
+  .vita-metrics { grid-template-columns: 1fr 1fr; }
+  .vita-metrics span:first-child { grid-column: 1 / 3; }
   .healing-window { order: 1; }
   .temp-window { order: 2; }
   .humidity-window { order: 3; }

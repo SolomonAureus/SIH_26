@@ -1,0 +1,10 @@
+numpy>=1.26,<3
+opencv-python>=4.9,<5
+torch>=2.2,<3
+torchvision>=0.17,<1
+efficientnet-pytorch==0.7.1
+pretrainedmodels==0.7.4
+timm==0.4.12
+tqdm>=4.64
+pytest>=8,<9
+
