@@ -141,7 +141,7 @@ body[data-screen="trends"] #trends { display: block; }
 
 .monitor-grid {
   display: grid;
-  grid-template-columns: minmax(185px, .72fr) minmax(430px, 2.35fr) minmax(185px, .72fr);
+  grid-template-columns: minmax(185px, .72fr) minmax(430px, 2.1fr) minmax(300px, 1.05fr);
   grid-template-rows: minmax(400px, 55vh) auto;
   gap: 18px;
 }
@@ -250,9 +250,18 @@ body[data-screen="trends"] #trends { display: block; }
 .target-reticle span { position: absolute; inset: 7px; border: 2px solid rgba(255,255,247,.75); border-radius: 50%; }
 
 .temp-window { grid-column: 1; grid-row: 1; }
-.humidity-window { grid-column: 3; grid-row: 1; }
 .data-window { align-self: center; }
 .metric-body { padding: clamp(20px, 2.5vw, 38px) 20px 25px; text-align: center; }
+
+/* Moisture + SpO2 sit side-by-side, right of the camera, in the same row (same height as camera). */
+.side-stack { grid-column: 3; grid-row: 1; display: flex; flex-direction: row; gap: 14px; min-height: 0; }
+.side-stack .data-window { flex: 1; min-height: 0; display: flex; flex-direction: column; align-self: stretch; }
+.side-stack .metric-body { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 14px 12px; }
+.side-stack .metric-icon { width: 30px; height: 36px; margin: 0 auto 10px; }
+.side-stack .metric-value strong { font-size: clamp(28px, 2.6vw, 44px); letter-spacing: -3px; }
+.side-stack .range-row { margin-top: 10px; font-size: 7px; }
+.side-stack .mini-track { margin: 6px 0 8px; }
+.side-stack .metric-foot { padding-top: 10px; font-size: 6px; }
 
 .metric-icon { position: relative; width: 42px; height: 52px; margin: 0 auto 23px; }
 .temp-icon { width: 18px; border: 3px solid var(--ink); border-radius: 12px 12px 0 0; }
@@ -260,6 +269,7 @@ body[data-screen="trends"] #trends { display: block; }
 .temp-icon span { position: absolute; z-index: 1; width: 6px; height: 34px; left: 3px; bottom: 0; background: var(--blue); }
 .temp-icon span::after { content: ''; position: absolute; width: 16px; height: 16px; left: -5px; bottom: -8px; border-radius: 50%; background: var(--blue); }
 .drop-icon { width: 40px; height: 50px; border: 3px solid var(--ink); background: var(--blue); clip-path: polygon(50% 0, 95% 60%, 95% 80%, 80% 96%, 50% 100%, 20% 96%, 5% 80%, 5% 60%); }
+.spo2-icon { width: 40px; height: 38px; border: 3px solid var(--ink); background: var(--blue); clip-path: polygon(50% 18%, 61% 6%, 75% 3%, 87% 9%, 95% 20%, 95% 34%, 50% 78%, 5% 34%, 5% 20%, 13% 9%, 25% 3%, 39% 6%); }
 
 .metric-label { margin-bottom: 7px; font: 400 7px/1.4 var(--pixel); }
 .metric-value { display: flex; justify-content: center; align-items: flex-start; }
@@ -270,7 +280,8 @@ body[data-screen="trends"] #trends { display: block; }
 .mini-track { height: 12px; border: 2px solid var(--ink); margin: 8px 0 16px; padding: 2px; }
 .mini-track span { display: block; height: 100%; background: repeating-linear-gradient(90deg, var(--blue) 0 7px, transparent 7px 10px); }
 #tempTrack { width: 67%; }
-#humidityTrack { width: 61%; }
+#moistureTrack { width: 61%; }
+#spo2Track { width: 98%; }
 .metric-foot { border-top: 2px dotted var(--ink); padding-top: 15px; font: 400 7px/1.5 var(--pixel); }
 .metric-foot span { color: var(--blue); }
 
@@ -287,6 +298,7 @@ body[data-screen="trends"] #trends { display: block; }
 .expected-marker span { position: absolute; left: -48px; top: -24px; width: 96px; text-align: center; font: 400 6px/1 var(--pixel); }
 .healing-details { display: flex; justify-content: space-between; margin-top: 9px; font: 700 8px/1 var(--mono); }
 .healing-details .ahead { color: var(--blue); }
+.healing-details .behind { color: var(--ink); }
 
 .system-window { grid-column: 1 / 2; grid-row: 2; align-self: stretch; }
 .system-log { padding: 11px; font-size: 7px; line-height: 1.65; }
@@ -369,11 +381,13 @@ body[data-screen="trends"] #trends { display: block; }
 
 @media (max-width: 1050px) {
   .app-shell { width: calc(100% - 48px); padding-left: 42px; padding-right: 18px; }
-  .monitor-grid { grid-template-columns: 1fr 1fr; grid-template-rows: minmax(410px, 55vh) auto auto; }
-  .camera-window { grid-column: 1 / 3; grid-row: 1; }
+  .monitor-grid { grid-template-columns: repeat(3, 1fr); grid-template-rows: minmax(410px, 55vh) auto auto; }
+  .camera-window { grid-column: 1 / 4; grid-row: 1; }
+  .side-stack { display: contents; }
   .temp-window { grid-column: 1; grid-row: 2; }
-  .humidity-window { grid-column: 2; grid-row: 2; }
-  .healing-window { grid-column: 1 / 3; grid-row: 3; }
+  .moisture-window { grid-column: 2; grid-row: 2; }
+  .spo2-window { grid-column: 3; grid-row: 2; }
+  .healing-window { grid-column: 1 / 4; grid-row: 3; }
   .system-window { display: none; }
 }
 
@@ -387,13 +401,15 @@ body[data-screen="trends"] #trends { display: block; }
   .screen-heading { align-items: flex-start; gap: 12px; }
   .session-id { display: none; }
   .monitor-grid { display: flex; flex-direction: column; }
+  .side-stack { display: contents; }
   .camera-window { min-height: 350px; order: 0; }
   .camera-toolbar { grid-template-columns: 1fr auto; }
   .mode-field { grid-column: 1; }
   .source-state { grid-column: 2; grid-row: 2; }
   .healing-window { order: 1; }
   .temp-window { order: 2; }
-  .humidity-window { order: 3; }
+  .moisture-window { order: 3; }
+  .spo2-window { order: 4; }
   .data-window { width: 100%; }
   .metric-body { padding: 25px 20px; }
   .healing-topline h3 { font-size: 11px; }
