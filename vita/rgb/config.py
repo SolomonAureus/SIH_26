@@ -18,7 +18,7 @@ class QualityConfig:
 
 @dataclass(slots=True)
 class RGBConfig:
-    camera_index: int = 0
+    camera_index: int | str = 0
     camera_width: int = 640
     camera_height: int = 480
     sampling_fps: float = 5.0

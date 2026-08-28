@@ -383,6 +383,8 @@ body[data-screen="trends"] #trends { display: block; }
 .telemetry-table tbody tr:first-child { background: rgba(29,33,255,.09); }
 .telemetry-table tbody tr:first-child td:first-child::before { content: '●'; margin-right: 4px; color: var(--blue); animation: blink 1s steps(2) infinite; }
 .telemetry-placeholder { min-height: 34px; display: grid; place-items: center; border-top: 2px dotted var(--ink); color: var(--muted); font: 400 5px/1.4 var(--pixel); }
+.telemetry-placeholder.error, .footer-status .error { color: #b42828; }
+.footer-status .error .status-dot { background: #b42828; }
 
 .system-window { grid-column: 1 / 2; grid-row: 2; align-self: stretch; }
 .system-log { padding: 11px; font-size: 7px; line-height: 1.65; }

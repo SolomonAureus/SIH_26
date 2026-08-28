@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0b12" />
     <title>BUERLYPH — Wound Sensor Console</title>
-    <link rel="stylesheet" href="styles.css?v=13" />
+    <link rel="stylesheet" href="styles.css?v=14" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -181,7 +181,7 @@
                 </tbody>
               </table>
             </div>
-            <div class="telemetry-placeholder">SIMULATED UI // ESP32 WIFI LINK PENDING</div>
+            <div class="telemetry-placeholder" id="sensorLinkState">SIMULATED SENSOR DATA</div>
           </section>
 
           <section class="severity-window panel" id="severityPanel">
@@ -271,13 +271,13 @@
       </section>
 
       <footer class="footer-status">
-        <span><i class="status-dot"></i> ESP32 CONNECTED</span>
+        <span id="esp32LinkState"><i class="status-dot"></i> SIMULATED SENSOR DATA</span>
         <span>PACKETS: <b id="packetCount">001842</b></span>
         <span>LAST SYNC: <b id="lastSync">NOW</b></span>
         <span class="footer-hint">[ TAB ] SWITCH SCREEN</span>
       </footer>
     </main>
 
-    <script src="app.js?v=12"></script>
+    <script src="app.js?v=13"></script>
   </body>
 </html>

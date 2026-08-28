@@ -11,10 +11,21 @@ from vita.rgb.pipeline import NoWoundTimeoutError, RGBPipeline
 from vita.rgb.wound_model import FUSegNetSegmenter, ModelConfigurationError
 
 
+def parse_camera_source(value: str) -> int | str:
+    """Accept either a local camera index or an MJPEG/RTSP/HTTP phone URL."""
+    try:
+        return int(value)
+    except ValueError:
+        return value
+
+
 def build_parser() -> argparse.ArgumentParser:
     defaults = RGBConfig()
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--camera", type=int, default=0)
+    parser.add_argument(
+        "--camera", type=parse_camera_source, default=0,
+        help="Local index (0) or phone camera stream URL (http://.../video)",
+    )
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=480)
     parser.add_argument("--sampling-fps", type=float, default=5)

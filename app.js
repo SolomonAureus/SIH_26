@@ -2,8 +2,13 @@ const CONFIG = {
   // Set to your ESP32 WebSocket endpoint, e.g. ws://192.168.1.80/ws.
   // Leave empty to run the built-in live sensor simulation.
   websocketUrl: '',
+  // ESP32 JSON endpoint on the shared Wi-Fi, e.g. http://192.168.1.80/data.
+  sensorHttpUrl: 'http://ESP32_IP/data',
+  sensorPollMs: 2000,
   // Set to an ESP32-CAM stream URL, e.g. http://192.168.1.80:81/stream.
   cameraStreamUrl: '',
+  // MJPEG/snapshot URL exposed by a phone IP-camera app on the same Wi-Fi.
+  phoneCameraUrl: 'http://10.200.59.110:8080/video',
   // The Python RGB pipeline publishes these through the same local web server.
   vitaStatusUrl: 'outputs/live_status.json',
   vitaCameraUrl: 'outputs/live_camera.jpg',
@@ -80,8 +85,36 @@ function renderSensorData(data) {
   if (state.currentMetric !== 'healing') drawTrendChart();
 }
 
+function setSensorLinkStatus(mode, isError = false) {
+  const telemetry = $('#sensorLinkState');
+  const footer = $('#esp32LinkState');
+  telemetry.textContent = mode;
+  telemetry.classList.toggle('error', isError);
+  footer.classList.toggle('error', isError);
+  footer.innerHTML = `<i class="status-dot"></i> ${mode}`;
+}
+
+async function pollSensorHttp() {
+  try {
+    const response = await fetch(`${CONFIG.sensorHttpUrl}?t=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`sensor status ${response.status}`);
+    renderSensorData(await response.json());
+    setSensorLinkStatus('ESP32 WIFI LIVE');
+  } catch (error) {
+    setSensorLinkStatus('ESP32 WIFI OFFLINE', true);
+  } finally {
+    setTimeout(pollSensorHttp, CONFIG.sensorPollMs);
+  }
+}
+
 function startSensorConnection() {
+  if (CONFIG.sensorHttpUrl) {
+    setSensorLinkStatus('CONNECTING TO ESP32');
+    pollSensorHttp();
+    return;
+  }
   if (!CONFIG.websocketUrl) {
+    setSensorLinkStatus('SIMULATED SENSOR DATA');
     setInterval(() => {
       renderSensorData({
         temperature: 36.7 + (Math.random() - 0.5) * 0.18,
@@ -98,7 +131,11 @@ function startSensorConnection() {
     try { renderSensorData(JSON.parse(event.data)); }
     catch (error) { console.warn('Invalid ESP32 sensor packet', error); }
   });
-  socket.addEventListener('close', () => setTimeout(startSensorConnection, 3000));
+  socket.addEventListener('open', () => setSensorLinkStatus('ESP32 WEBSOCKET LIVE'));
+  socket.addEventListener('close', () => {
+    setSensorLinkStatus('ESP32 WEBSOCKET OFFLINE', true);
+    setTimeout(startSensorConnection, 3000);
+  });
 }
 
 function setCameraStatus(message, isError = false) {
@@ -132,6 +169,23 @@ function setSpectrumMode(mode) {
   const stage = $('#cameraStage');
   stage.classList.remove('mode-visible', 'mode-infrared', 'mode-ultraviolet', 'mode-thermal');
   stage.classList.add(`mode-${mode}`);
+}
+
+function getAllCameraSources() {
+  const sources = [...CONFIG.cameraSources];
+  if (CONFIG.phoneCameraUrl && !sources.some((source) => source.url === CONFIG.phoneCameraUrl)) {
+    sources.unshift({
+      id: 'phone-wifi', label: 'PHONE WIFI CAMERA', type: 'mjpeg',
+      url: CONFIG.phoneCameraUrl, spectrum: 'visible',
+    });
+  }
+  if (CONFIG.cameraStreamUrl && !sources.some((source) => source.url === CONFIG.cameraStreamUrl)) {
+    sources.push({
+      id: 'legacy-esp32', label: 'ESP32-CAM', type: 'mjpeg',
+      url: CONFIG.cameraStreamUrl, spectrum: 'visible',
+    });
+  }
+  return sources;
 }
 
 async function selectCameraSource(value) {
@@ -191,7 +245,7 @@ async function selectCameraSource(value) {
     return;
   }
 
-  const source = CONFIG.cameraSources.find((item) => `network:${item.id}` === value);
+  const source = getAllCameraSources().find((item) => `network:${item.id}` === value);
   if (!source) return;
   image.onload = () => setCameraStatus('NETWORK FEED LIVE');
   image.onerror = () => {
@@ -367,10 +421,7 @@ async function detectCameraSources(requestPermission = false) {
   const select = $('#cameraSourceSelect');
   select.querySelectorAll('optgroup').forEach((group) => group.remove());
 
-  const configuredSources = [...CONFIG.cameraSources];
-  if (CONFIG.cameraStreamUrl && !configuredSources.some((source) => source.url === CONFIG.cameraStreamUrl)) {
-    configuredSources.unshift({ id: 'legacy-esp32', label: 'ESP32-CAM', type: 'mjpeg', url: CONFIG.cameraStreamUrl, spectrum: 'visible' });
-  }
+  const configuredSources = getAllCameraSources();
   configuredSources.filter((source) => source.url).forEach((source) => {
     addCameraOption(`network:${source.id}`, `${source.label} / ${source.spectrum || 'visible'}`.toUpperCase(), 'NETWORK / SENSOR FEEDS');
   });

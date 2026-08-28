@@ -23,7 +23,7 @@ class CapturedFrame:
 
 class OpenCVCamera:
     def __init__(
-        self, index: int, width: int, height: int, sampling_fps: float,
+        self, index: int | str, width: int, height: int, sampling_fps: float,
         frame_callback: Callable[[np.ndarray], None] | None = None,
     ) -> None:
         self.index, self.width, self.height = index, width, height
@@ -43,7 +43,7 @@ class OpenCVCamera:
         self.capture = cv2.VideoCapture(self.index)
         if not self.capture.isOpened():
             self.release()
-            raise CameraUnavailableError(f"Unable to open camera index {self.index}")
+            raise CameraUnavailableError(f"Unable to open camera source {self.index}")
         self.capture.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
         self.capture.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
         self.capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)

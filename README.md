@@ -20,12 +20,18 @@ python3 -m http.server 8080
 
 Then open `http://localhost:8080`.
 
-## Connect an ESP32
+## Connect a phone camera and ESP32
+
+The shared-Wi-Fi setup is documented in [`Sensor connections/NETWORK_SETUP.md`](Sensor%20connections/NETWORK_SETUP.md). It supports a phone MJPEG/RTSP camera URL for VITA and an ESP32 HTTP endpoint for temperature, moisture, and SpO2.
+
+## Legacy/manual endpoint configuration
 
 Edit `CONFIG` at the top of `app.js`:
 
 ```js
 const CONFIG = {
+  sensorHttpUrl: 'http://192.168.1.80/data',
+  phoneCameraUrl: 'http://192.168.1.25:8080/video',
   websocketUrl: 'ws://192.168.1.80/ws',
   cameraStreamUrl: 'http://192.168.1.80:81/stream',
   cameraSources: [
@@ -41,7 +47,8 @@ The dashboard expects WebSocket messages shaped like:
 {
   "temperature": 36.7,
   "humidity": 61,
-  "healing": 68
+  "moisture": 61,
+  "spo2": 98
 }
 ```
 
