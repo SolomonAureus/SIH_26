@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0b12" />
+    <title>BUERLYPH — Wound Sensor Console</title>
+    <link rel="stylesheet" href="styles.css?v=9" />
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+
+    <aside class="drawer" id="drawer" aria-label="Dashboard navigation">
+      <button class="drawer-tab" id="drawerToggle" aria-expanded="false" aria-controls="drawer">
+        <span class="drawer-tab-icon">»</span>
+        <span class="drawer-tab-label">MENU</span>
+      </button>
+
+      <div class="drawer-inner">
+        <div class="brand-mark" aria-hidden="true">
+          <span>+</span>
+        </div>
+        <p class="eyebrow">BUERLYPH</p>
+        <p class="drawer-title">DEVICE<br />CONSOLE</p>
+
+        <nav class="screen-nav">
+          <button class="nav-item active" data-screen="overview">
+            <span class="nav-number">01</span>
+            <span>LIVE VIEW</span>
+          </button>
+          <button class="nav-item" data-screen="trends">
+            <span class="nav-number">02</span>
+            <span>VITAL LOG</span>
+          </button>
+        </nav>
+
+        <div class="drawer-device">
+          <span class="status-dot"></span>
+          <div>
+            <p>ESP32-WROOM</p>
+            <small>LINKED / 42ms</small>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">PATIENT MONITOR / UNIT 01</p>
+          <h1>BUER<span>LYPH</span></h1>
+        </div>
+        <div class="topbar-meta">
+          <div class="live-pill"><span></span> LIVE FEED</div>
+          <div class="clock-wrap">
+            <span id="clock">00:00:00</span>
+            <small id="date">-- --- ----</small>
+          </div>
+        </div>
+      </header>
+
+      <section class="screen active" id="overview" aria-labelledby="overviewTitle">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">SCREEN 01 / REAL-TIME</p>
+            <h2 id="overviewTitle">HEALING OBSERVATION</h2>
+          </div>
+          <div class="session-id">SESSION <strong>#A7-042</strong></div>
+        </div>
+
+        <div class="monitor-grid">
+          <section class="data-window temp-window panel">
+            <div class="window-bar">
+              <span>TEMP_SENSOR.EXE</span>
+              <div class="window-controls"><i></i><i></i></div>
+            </div>
+            <div class="window-body metric-body">
+              <div class="metric-icon temp-icon" aria-hidden="true">
+                <span></span>
+              </div>
+              <p class="metric-label">SKIN TEMP</p>
+              <div class="metric-value"><strong id="tempValue">36.7</strong><span>°C</span></div>
+              <div class="range-row"><span>NORMAL RANGE</span><b>36.1—37.2</b></div>
+              <div class="mini-track"><span id="tempTrack"></span></div>
+              <div class="metric-foot positive"><span>↗</span> +0.2° / LAST HR</div>
+            </div>
+          </section>
+
+          <section class="camera-window panel">
+            <div class="window-bar bright">
+              <span>VISUAL_SCANNER // INPUT MATRIX</span>
+              <div class="window-controls"><i></i><i></i></div>
+            </div>
+            <div class="camera-toolbar">
+              <label class="camera-field source-field">
+                <span>INPUT SOURCE</span>
+                <select id="cameraSourceSelect" aria-label="Camera input source">
+                  <option value="demo">DEMO SCANNER</option>
+                </select>
+              </label>
+              <button class="scan-button" id="scanCameras" type="button" title="Detect connected cameras">
+                <span aria-hidden="true">↻</span> SCAN
+              </button>
+              <label class="camera-field mode-field">
+                <span>VISUAL MODE</span>
+                <select id="spectrumSelect" aria-label="Camera spectrum display mode">
+                  <option value="visible">VISIBLE</option>
+                  <option value="infrared">INFRARED</option>
+                  <option value="ultraviolet">ULTRAVIOLET</option>
+                  <option value="thermal">THERMAL MAP</option>
+                </select>
+              </label>
+              <div class="source-state" id="cameraSourceState"><i></i> DEMO ACTIVE</div>
+            </div>
+            <div class="camera-stage mode-visible" id="cameraStage">
+              <canvas id="cameraCanvas" width="760" height="500" aria-label="Live ESP32 camera visualization"></canvas>
+              <img id="cameraFeed" alt="ESP32 camera feed" hidden />
+              <video id="cameraVideo" autoplay muted playsinline hidden aria-label="Connected camera feed"></video>
+              <div class="scan-line"></div>
+              <div class="camera-corners" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+              <div class="camera-overlay top-left"><b id="activeCameraLabel">DEMO SCANNER</b><br /><span id="activeCameraMeta">640 × 480 / SYNTH</span></div>
+              <div class="camera-overlay top-right"><span class="rec-dot"></span> REC</div>
+              <div class="camera-overlay bottom-left">ROI LOCKED</div>
+              <div class="camera-overlay bottom-right">08:42:16</div>
+              <div class="target-reticle" aria-hidden="true"><span></span></div>
+            </div>
+          </section>
+
+          <section class="data-window humidity-window panel">
+            <div class="window-bar">
+              <span>HUMID_SENSOR.EXE</span>
+              <div class="window-controls"><i></i><i></i></div>
+            </div>
+            <div class="window-body metric-body">
+              <div class="metric-icon drop-icon" aria-hidden="true"></div>
+              <p class="metric-label">LOCAL HUMIDITY</p>
+              <div class="metric-value"><strong id="humidityValue">61</strong><span>%</span></div>
+              <div class="range-row"><span>TARGET RANGE</span><b>55—65%</b></div>
+              <div class="mini-track"><span id="humidityTrack"></span></div>
+              <div class="metric-foot positive"><span>✓</span> OPTIMAL MOISTURE</div>
+            </div>
+          </section>
+
+          <section class="healing-window panel">
+            <div class="healing-topline">
+              <div>
+                <p class="eyebrow">WOUND HEALING STATUS</p>
+                <h3>ON TRACK <span>// DAY 08</span></h3>
+              </div>
+              <div class="healing-percent"><strong id="healingValue">68</strong><span>%</span></div>
+            </div>
+            <div class="pixel-progress" aria-label="Healing progress: 68 percent">
+              <div class="progress-fill" id="healingTrack"></div>
+              <div class="expected-marker"><span>EXPECTED 65%</span></div>
+            </div>
+            <div class="healing-details">
+              <span>INITIAL</span>
+              <span class="ahead">+3% AHEAD OF CURVE</span>
+              <span>RECOVERED</span>
+            </div>
+          </section>
+
+          <section class="system-window panel">
+            <div class="window-bar">
+              <span>SYSTEM.LOG</span>
+              <div class="window-controls"><i></i><i></i></div>
+            </div>
+            <div class="system-log">
+              <p><span>08:42:11</span> SENSOR PACKET RECEIVED</p>
+              <p><span>08:42:12</span> IMAGE FRAME OK</p>
+              <p><span>08:42:13</span> VITALS WITHIN RANGE</p>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="screen" id="trends" aria-labelledby="trendsTitle">
+        <div class="screen-heading">
+          <div>
+            <p class="eyebrow">SCREEN 02 / HISTORY</p>
+            <h2 id="trendsTitle">VITAL DATA LOG</h2>
+          </div>
+          <div class="range-switcher" role="group" aria-label="Chart time range">
+            <button class="active" data-range="24">24H</button>
+            <button data-range="168">7D</button>
+            <button data-range="336">14D</button>
+          </div>
+        </div>
+
+        <section class="chart-window panel">
+          <div class="window-bar bright">
+            <span>HEALING_CURVE.DAT</span>
+            <div class="window-controls"><i></i><i></i></div>
+          </div>
+          <div class="chart-toolbar">
+            <div>
+              <p class="eyebrow">SELECT VITAL</p>
+              <div class="metric-tabs">
+                <button class="active" data-metric="healing">HEALING</button>
+                <button data-metric="temperature">TEMPERATURE</button>
+                <button data-metric="humidity">HUMIDITY</button>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <span><i class="actual"></i> OBSERVED</span>
+              <span><i class="expected"></i> EXPECTED MEAN</span>
+            </div>
+          </div>
+          <div class="chart-area">
+            <canvas id="trendCanvas" width="1200" height="510" aria-label="Observed and expected healing trend graph"></canvas>
+            <div class="chart-tooltip" id="chartTooltip" hidden></div>
+          </div>
+        </section>
+
+        <div class="trend-stats">
+          <section class="stat-card panel">
+            <p class="eyebrow">CURRENT</p>
+            <strong id="statCurrent">68%</strong>
+            <span>OBSERVED VALUE</span>
+          </section>
+          <section class="stat-card panel inverted">
+            <p class="eyebrow">EXPECTED</p>
+            <strong id="statExpected">65%</strong>
+            <span>MEAN CURVE</span>
+          </section>
+          <section class="stat-card panel">
+            <p class="eyebrow">VARIANCE</p>
+            <strong id="statVariance">+3%</strong>
+            <span>HEALING AHEAD</span>
+          </section>
+          <section class="stat-card panel alert-card">
+            <p class="eyebrow">FORECAST</p>
+            <strong>6 DAYS</strong>
+            <span>TO TARGET</span>
+          </section>
+        </div>
+      </section>
+
+      <footer class="footer-status">
+        <span><i class="status-dot"></i> ESP32 CONNECTED</span>
+        <span>PACKETS: <b id="packetCount">001842</b></span>
+        <span>LAST SYNC: <b id="lastSync">NOW</b></span>
+        <span class="footer-hint">[ TAB ] SWITCH SCREEN</span>
+      </footer>
+    </main>
+
+    <script src="app.js?v=8"></script>
+  </body>
+</html>
