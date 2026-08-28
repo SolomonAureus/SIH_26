@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#0b0b12" />
     <title>BUERLYPH — Wound Sensor Console</title>
-    <link rel="stylesheet" href="styles.css?v=12" />
+    <link rel="stylesheet" href="styles.css?v=13" />
   </head>
   <body>
     <div class="noise" aria-hidden="true"></div>
@@ -69,7 +69,7 @@
         </div>
 
         <div class="monitor-grid">
-          <section class="data-window temp-window panel">
+          <section class="data-window stacked-sensor temp-window panel">
             <div class="window-bar">
               <span>TEMP_SENSOR.EXE</span>
               <div class="window-controls"><i></i><i></i></div>
@@ -136,7 +136,7 @@
             </div>
           </section>
 
-          <section class="data-window humidity-window panel">
+          <section class="data-window stacked-sensor humidity-window panel">
             <div class="window-bar">
               <span>HUMID_SENSOR.EXE</span>
               <div class="window-controls"><i></i><i></i></div>
@@ -151,38 +151,58 @@
             </div>
           </section>
 
-          <section class="healing-window panel">
-            <div class="healing-topline">
-              <div class="healing-title-row">
-                <div class="heart-pulse" role="img" aria-label="Animated pixel heart"></div>
-                <div>
-                  <p class="eyebrow">WOUND HEALING STATUS</p>
-                  <h3>ON TRACK <span>// DAY 08</span></h3>
-                </div>
-              </div>
-              <div class="healing-percent"><strong id="healingValue">68</strong><span>%</span></div>
+          <section class="data-window stacked-sensor spo2-window panel">
+            <div class="window-bar">
+              <span>SPO2_SENSOR.EXE</span>
+              <div class="window-controls"><i></i><i></i></div>
             </div>
-            <div class="pixel-progress" aria-label="Healing progress: 68 percent">
-              <div class="progress-fill" id="healingTrack"></div>
-              <div class="expected-marker"><span>EXPECTED 65%</span></div>
-            </div>
-            <div class="healing-details">
-              <span>INITIAL</span>
-              <span class="ahead">+3% AHEAD OF CURVE</span>
-              <span>RECOVERED</span>
+            <div class="window-body metric-body">
+              <div class="heart-pulse" role="img" aria-label="Animated pixel heart"></div>
+              <p class="metric-label">BLOOD OXYGEN</p>
+              <div class="metric-value"><strong id="spo2Value">98</strong><span>%</span></div>
+              <div class="range-row"><span>NORMAL RANGE</span><b>95—100%</b></div>
+              <div class="mini-track"><span id="spo2Track"></span></div>
+              <div class="metric-foot positive"><span>✓</span> STABLE SATURATION</div>
             </div>
           </section>
 
-          <section class="system-window panel">
-            <div class="window-bar">
-              <span>SYSTEM.LOG</span>
+          <section class="telemetry-window panel">
+            <div class="window-bar bright">
+              <span>LIVE_ESP32_DATA.LOG</span>
               <div class="window-controls"><i></i><i></i></div>
             </div>
-            <div class="system-log">
-              <p><span>08:42:11</span> SENSOR PACKET RECEIVED</p>
-              <p><span>08:42:12</span> IMAGE FRAME OK</p>
-              <p><span>08:42:13</span> VITALS WITHIN RANGE</p>
+            <div class="telemetry-table-wrap">
+              <table class="telemetry-table">
+                <thead>
+                  <tr><th>TIME</th><th>TEMP</th><th>HUMID</th><th>SPO2</th></tr>
+                </thead>
+                <tbody id="telemetryBody">
+                  <tr><td>--:--:--</td><td>36.7°C</td><td>61%</td><td>98%</td></tr>
+                </tbody>
+              </table>
             </div>
+            <div class="telemetry-placeholder">SIMULATED UI // ESP32 WIFI LINK PENDING</div>
+          </section>
+
+          <section class="severity-window panel" id="severityPanel">
+            <div class="healing-topline">
+              <div>
+                <p class="eyebrow">CAMERA WOUND SEVERITY // 10 SECOND CHECK</p>
+                <h3><b id="severityLabel">WAITING FOR CAMERA</b> <span id="severityUpdated">// NOT SCANNED</span></h3>
+              </div>
+              <div class="healing-percent"><strong id="severityValue">--</strong><span>% AREA</span></div>
+            </div>
+            <div class="pixel-progress severity-progress" id="severityProgress" aria-label="Waiting for camera severity estimate">
+              <div class="progress-fill" id="severityTrack"></div>
+              <div class="progress-grid" aria-hidden="true"></div>
+              <div class="severity-glyph" id="severityGlyph" aria-hidden="true"></div>
+            </div>
+            <div class="healing-details">
+              <span class="severity-low">LOW / GREEN</span>
+              <span class="severity-moderate">MODERATE / YELLOW</span>
+              <span class="severity-high">HIGH / RED</span>
+            </div>
+            <p class="severity-note" id="severityNote">VISUAL MASK AREA HEURISTIC // NOT A MEDICAL DIAGNOSIS</p>
           </section>
         </div>
       </section>
@@ -212,6 +232,7 @@
                 <button class="active" data-metric="healing">HEALING</button>
                 <button data-metric="temperature">TEMPERATURE</button>
                 <button data-metric="humidity">HUMIDITY</button>
+                <button data-metric="spo2">SPO2</button>
               </div>
             </div>
             <div class="chart-legend">
@@ -257,6 +278,6 @@
       </footer>
     </main>
 
-    <script src="app.js?v=11"></script>
+    <script src="app.js?v=12"></script>
   </body>
 </html>

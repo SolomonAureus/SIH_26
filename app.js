@@ -10,6 +10,7 @@ const CONFIG = {
   vitaDetectionUrl: 'outputs/live_preview.jpg',
   vitaPreviewMs: 100,
   vitaPollMs: 750,
+  severityPollMs: 10000,
   // Add network cameras here. MJPEG streams render directly in the scanner.
   // UV/IR cameras connected by USB also appear automatically after SCAN.
   cameraSources: [
@@ -22,6 +23,7 @@ const CONFIG = {
 const state = {
   temperature: 36.7,
   humidity: 61,
+  spo2: 98,
   healing: 68,
   packets: 1842,
   currentMetric: 'healing',
@@ -43,19 +45,35 @@ function updateClock() {
   $('.bottom-right').textContent = now.toLocaleTimeString('en-GB', { hour12: false });
 }
 
+function addTelemetryRow() {
+  const body = $('#telemetryBody');
+  if (!body) return;
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${new Date().toLocaleTimeString('en-GB', { hour12: false })}</td>
+    <td>${state.temperature.toFixed(1)}°C</td>
+    <td>${Math.round(state.humidity)}%</td>
+    <td>${Math.round(state.spo2)}%</td>
+  `;
+  body.prepend(row);
+  while (body.children.length > 10) body.lastElementChild.remove();
+}
+
 function renderSensorData(data) {
   if (Number.isFinite(data.temperature)) state.temperature = data.temperature;
   if (Number.isFinite(data.humidity)) state.humidity = data.humidity;
+  else if (Number.isFinite(data.moisture)) state.humidity = data.moisture;
+  if (Number.isFinite(data.spo2)) state.spo2 = data.spo2;
   if (Number.isFinite(data.healing)) state.healing = data.healing;
   state.packets += 1;
 
   $('#tempValue').textContent = state.temperature.toFixed(1);
   $('#humidityValue').textContent = Math.round(state.humidity);
-  $('#healingValue').textContent = Math.round(state.healing);
+  $('#spo2Value').textContent = Math.round(state.spo2);
   $('#tempTrack').style.width = `${Math.min(100, Math.max(0, (state.temperature - 32) * 14))}%`;
   $('#humidityTrack').style.width = `${state.humidity}%`;
-  $('#healingTrack').style.width = `${state.healing}%`;
-  $('.pixel-progress').setAttribute('aria-label', `Healing progress: ${Math.round(state.healing)} percent`);
+  $('#spo2Track').style.width = `${Math.min(100, Math.max(0, (state.spo2 - 90) * 10))}%`;
+  addTelemetryRow();
   $('#packetCount').textContent = String(state.packets).padStart(6, '0');
   $('#lastSync').textContent = 'NOW';
 
@@ -68,6 +86,7 @@ function startSensorConnection() {
       renderSensorData({
         temperature: 36.7 + (Math.random() - 0.5) * 0.18,
         humidity: 61 + (Math.random() - 0.5) * 1.3,
+        spo2: 98 + (Math.random() - 0.5) * 0.6,
         healing: 68 + (Math.random() - 0.5) * 0.12,
       });
     }, 2200);
@@ -192,6 +211,73 @@ async function selectCameraSource(value) {
 
 function metricText(value, digits = 0, suffix = '') {
   return Number.isFinite(value) ? `${Number(value).toFixed(digits)}${suffix}` : '--';
+}
+
+function setSeverityDisplay(level, label, coverage = null, data = null) {
+  const panel = $('#severityPanel');
+  panel.classList.remove('severity-low', 'severity-moderate', 'severity-high');
+  if (level) panel.classList.add(`severity-${level}`);
+
+  const actualPercent = Number.isFinite(coverage) ? coverage * 100 : null;
+  // Twenty-five percent mask coverage fills the display scale; the number remains actual coverage.
+  const displayPosition = Number.isFinite(coverage) ? Math.min(100, Math.max(0, coverage * 400)) : 0;
+  $('#severityLabel').textContent = label;
+  $('#severityValue').textContent = Number.isFinite(actualPercent) ? actualPercent.toFixed(1) : '--';
+  $('#severityTrack').style.width = `${displayPosition}%`;
+  $('#severityGlyph').style.left = `${displayPosition}%`;
+  $('#severityProgress').setAttribute(
+    'aria-label', Number.isFinite(actualPercent)
+      ? `${label}, wound mask covers ${actualPercent.toFixed(1)} percent of camera image`
+      : label,
+  );
+
+  const updated = data?.timestamp ? new Date(data.timestamp) : null;
+  $('#severityUpdated').textContent = updated && !Number.isNaN(updated.valueOf())
+    ? `// ${updated.toLocaleTimeString('en-GB', { hour12: false })}`
+    : '// NO CURRENT RESULT';
+  $('#severityNote').textContent = data && Number.isFinite(data.confidence)
+    ? `VISUAL MASK AREA HEURISTIC // CONF ${data.confidence.toFixed(2)} // NOT A MEDICAL DIAGNOSIS`
+    : 'VISUAL MASK AREA HEURISTIC // NOT A MEDICAL DIAGNOSIS';
+}
+
+function renderWoundSeverity(data) {
+  const status = String(data.status || '').toUpperCase();
+  if (status.includes('NO WOUND')) {
+    setSeverityDisplay('low', 'NO WOUND REGION FOUND', 0, data);
+    return;
+  }
+  if (status.startsWith('REJECTED') || status === 'MODEL ERROR') {
+    setSeverityDisplay('', `SCAN UNAVAILABLE: ${status}`, null, data);
+    return;
+  }
+
+  let coverage = data.wound_coverage_ratio == null
+    ? Number.NaN
+    : Number(data.wound_coverage_ratio);
+  if (!Number.isFinite(coverage) && Number.isFinite(data.wound_area_px)) {
+    coverage = data.wound_area_px / (640 * 480);
+  }
+  if (!Number.isFinite(coverage) || coverage < 0) {
+    setSeverityDisplay('', 'WAITING FOR WOUND RESULT', null, data);
+  } else if (coverage < 0.05) {
+    setSeverityDisplay('low', 'LOW VISUAL SEVERITY', coverage, data);
+  } else if (coverage < 0.15) {
+    setSeverityDisplay('moderate', 'MODERATE VISUAL SEVERITY', coverage, data);
+  } else {
+    setSeverityDisplay('high', 'HIGH VISUAL SEVERITY', coverage, data);
+  }
+}
+
+async function pollWoundSeverity() {
+  try {
+    const response = await fetch(`${CONFIG.vitaStatusUrl}?severity=${Date.now()}`, { cache: 'no-store' });
+    if (!response.ok) throw new Error(`status ${response.status}`);
+    renderWoundSeverity(await response.json());
+  } catch (error) {
+    setSeverityDisplay('', 'CAMERA ANALYSIS OFFLINE');
+  } finally {
+    setTimeout(pollWoundSeverity, CONFIG.severityPollMs);
+  }
 }
 
 async function pollVitaStatus() {
@@ -413,6 +499,11 @@ const chartData = {
     expected: [65, 64, 63, 62, 61, 60, 60, 60, 60, 59, 59, 59, 58, 58],
     actual: [71, 68, 66, 64, 63, 62, 60, 61, 61, 60, 60, 59, 59, 58],
   },
+  spo2: {
+    label: 'SPO2', unit: '%', min: 90, max: 100,
+    expected: [96, 96, 97, 97, 97, 97, 98, 98, 98, 98, 98, 98, 98, 98],
+    actual: [95, 96, 96, 97, 97, 98, 97, 98, 98, 99, 98, 98, 99, 98],
+  },
 };
 
 function drawTrendChart() {
@@ -574,6 +665,7 @@ setupCameraFeed();
 loadPixilThermometer();
 drawCameraPlaceholder();
 startSensorConnection();
+pollWoundSeverity();
 showScreen(location.hash.slice(1) || 'overview');
 window.addEventListener('hashchange', () => showScreen(location.hash.slice(1) || 'overview'));
 window.addEventListener('resize', () => {

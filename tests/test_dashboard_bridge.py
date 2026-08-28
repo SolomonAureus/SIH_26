@@ -38,4 +38,7 @@ def test_dashboard_publisher_writes_preview_and_status(tmp_path):
     assert payload["complete"] is False
     assert payload["bounding_box"] == [15, 10, 30, 20]
     assert payload["wound_area_px"] == 600.0
+    assert payload["wound_coverage_ratio"] == 0.25
+    assert payload["frame_width"] == 60
+    assert payload["frame_height"] == 40
     assert payload["confidence"] == 0.81

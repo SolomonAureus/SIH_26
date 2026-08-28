@@ -53,6 +53,9 @@ class DashboardPublisher:
             "target_frames": target_frames,
             "complete": accepted_frames >= target_frames,
             "wound_area_px": self._number(features.get("wound_area_px")),
+            "wound_coverage_ratio": self._coverage(features.get("wound_area_px"), frame),
+            "frame_width": int(frame.shape[1]),
+            "frame_height": int(frame.shape[0]),
             "confidence": confidence,
             "bounding_box": bounding_box,
             "mean_R": self._number(features.get("mean_R")),
@@ -71,6 +74,10 @@ class DashboardPublisher:
     @staticmethod
     def _number(value: object) -> float | None:
         return float(value) if value is not None else None
+
+    @staticmethod
+    def _coverage(area: object, frame: np.ndarray) -> float | None:
+        return float(area) / float(frame.shape[0] * frame.shape[1]) if area is not None else None
 
     def _write_jpeg(
         self, frame: np.ndarray, destination: Path, temporary_name: str, quality: int,
